@@ -1,8 +1,8 @@
 import requests
 import streamlit as st
+import os
 
-BASE_URL = "http://localhost:8000/api"
-
+BASE_URL = os.getenv("API_URL", "https://mai-api-backend.onrender.com")
 # 🚀 核心优化：建立全局 HTTP 连接池，免除每次请求的 TCP 握手开销，大幅提速
 http_session = requests.Session()
 
