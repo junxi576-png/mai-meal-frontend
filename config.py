@@ -1,0 +1,303 @@
+APP_TITLE = "MAI Meal Planner | 智能临床排餐系统"
+
+CUSTOM_CSS = """
+<style>
+    .stMultiSelect div[data-baseweb="tag"] { background-color: #2e3136 !important; border-radius: 8px; padding: 4px 8px; }
+    .meal-card {
+        border: 1px solid #444; border-radius: 15px; padding: 20px; 
+        background-color: #1e1e1e; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    .recipe-title { color: #f39c12; font-size: 1.2em; font-weight: bold; margin-bottom: 5px; }
+    .kcal-badge { background-color: #ff4b4b; color: white; padding: 2px 10px; border-radius: 6px; font-weight: bold; font-size: 1.1em; }
+    .ing-row { display: flex; justify-content: space-between; font-size: 0.9em; color: #ddd; border-bottom: 1px dashed #444; padding: 3px 0; }
+    .ing-virtual { color: #00e676; font-style: italic; background-color: #113322; padding: 2px 8px; border-radius: 4px; border-bottom: none; }
+    .micro-row { display: flex; justify-content: space-between; font-size: 0.85em; color: #aaa; margin-top: 15px; padding-top: 10px; border-top: 1px solid #444; }
+    .na-warning { color: #ff4b4b; font-weight: bold; text-decoration: underline; }
+    .stButton>button { border-radius: 8px; font-weight: bold; }
+    .status-box { padding: 15px; border-radius: 8px; margin-bottom: 15px; background-color: #2b2b2b; border-left: 5px solid #00c853; }
+    .med-alert { background-color: #4a1919; border-left: 5px solid #ff4b4b; padding: 15px; border-radius: 5px; margin-bottom: 15px;}
+    .profile-header { font-size: 1.5em; color: #00c853; font-weight: bold; margin-bottom: 10px; }
+</style>
+"""
+
+EN_DICT = {
+    # --- 基础与用户模块 ---
+    "MAI 临床智能营养师": "MAI Smart Clinical Nutritionist",
+    "精准医学营养治疗 (MNT) 排餐引擎": "Precision Medical Nutrition Therapy (MNT) Engine",
+    "🔐 账号登录": "🔐 Login",
+    "📝 新用户注册": "📝 Register",
+    "用户名": "Username",
+    "密码": "Password",
+    "登 录": "Login",
+    "用户名或密码错误，请检查！": "Invalid username or password!",
+    "登录成功！正在进入您的专属健康排餐台...": "Login successful! Entering dashboard...",
+    "🔄 忘记密码？点击这里找回/重置": "🔄 Forgot password? Click to reset",
+    "🔒 出于安全考虑，重置密码需要进行基础身份验证。": "🔒 Security verification required to reset password.",
+    "请输入需要找回的用户名": "Enter username to reset",
+    "请输入注册时预留的【年龄】验证": "Enter registered [Age] for verification",
+    "输入新密码": "Enter new password",
+    "验证并重置": "Verify & Reset",
+    "请填写完整的用户名和新密码。": "Please enter both username and new password.",
+    "✅ 密码重置成功！请直接登录。": "✅ Password reset successful! Please log in.",
+    "❌ 用户名不存在，或预留的验证年龄不匹配！": "❌ Username not found or age verification failed!",
+    "💡 建立您的永久健康档案，AI 营养师将终身为您排忧解难。": "💡 Create your health profile for lifelong AI assistance.",
+    "设置用户名 (仅限英文、数字、下划线，3-20位)": "Set Username (alphanumeric & _, 3-20 chars)",
+    "设置密码": "Set Password",
+    "#### 👤 基础体征": "#### 👤 Basic Vitals",
+    "性别": "Gender",
+    "年龄": "Age",
+    "身高 (cm)": "Height (cm)",
+    "体重 (kg)": "Weight (kg)",
+    "#### 🩺 临床与过敏筛查": "#### 🩺 Clinical & Allergy Screening",
+    "您的血糖状况属于：": "Your Blood Sugar Status:",
+    "是否伴有以下代谢并发症：": "Metabolic Complications:",
+    "是否有以下食物过敏史：": "Food Allergies:",
+    "💾 注册并生成我的健康档案": "💾 Register & Create Profile",
+    "请填写完整的用户名和密码！": "Please fill in username and password!",
+    "❌ 用户名格式不符：只能包含英文、数字和下划线，且长度在 3-20 位之间。": "❌ Invalid username format.",
+    "🍽️ 智能排餐控制台": "🍽️ Smart Meal Console",
+    "⚙️ 个人档案与体征管理": "⚙️ Profile & Vitals",
+    "🚪 退出登录": "🚪 Logout",
+    "### ⚙️ 更新我的健康档案": "### ⚙️ Update Health Profile",
+    "在此处修改您的体征或过敏指标，更新后左侧状态和底层算法将自动同步生效。": "Modify your vitals or allergies here. Updates will sync automatically.",
+    "💾 保存档案修改": "💾 Save Profile Changes",
+    "✅ 档案更新成功！正在为您重新加载...": "✅ Profile updated! Reloading engine...",
+    
+    # --- 引擎排餐模块 ---
+    "### ⚖️ 步骤一：餐次能量分配": "### ⚖️ Step 1: Energy Allocation",
+    "📉 目标能量缺口 (每日减持 kcal)": "📉 Target Daily Caloric Deficit (kcal)",
+    "🕒 本餐次类别": "🕒 Meal Type",
+    "三大营养素分配策略": "Macronutrient Distribution Strategy",
+    "自定义比例 (手动覆写)": "Custom Ratio (Manual Override)",
+    "🥩 蛋白质占比 (%)": "🥩 Protein (%)",
+    "🍚 碳水占比 (%)": "🍚 Carbs (%)",
+    "🥑 脂肪占比 (%)": "🥑 Fat (%)",
+    "### 🥘 步骤二：环境食材与信仰禁忌": "### 🥘 Step 2: Ingredients & Diet Restrictions",
+    "🥬 冰箱里的蔬菜": "🥬 Available Vegetables",
+    "🥩 冰箱里的肉类/海鲜": "🥩 Available Meat/Seafood",
+    "🌾 冰箱里的主食": "🌾 Available Staples",
+    "选择已有蔬菜...": "Select available veg...",
+    "选择已有肉类...": "Select available meat...",
+    "选择已有主食...": "Select available staples...",
+    "AI 匹配策略：": "AI Matching Strategy:",
+    "##### 🚫 信仰与饮食风俗": "##### 🚫 Beliefs & Customs",
+    "☪️ 严格清真 (Halal)": "☪️ Halal",
+    "🥬 纯素食 (Vegan)": "🥬 Vegan",
+    "🩸 控糖 (低GI食材)": "🩸 Blood Sugar Control (Low GI)",
+    "### 🍽️ 步骤三：餐盘结构规划": "### 🍽️ Step 3: Plate Structure",
+    "🥘 几道菜品？": "🥘 How many dishes?",
+    "🍚 几份主食？": "🍚 How many staples?",
+    "🍲 几份汤水/饮品？": "🍲 How many soups/drinks?",
+    "🪄 引擎启动：生成专属 clinical 配餐": "🪄 Start Engine: Generate Clinical Meals",
+    "🔄 换一批组合 (不重复)": "🔄 Generate Alternative Meals",
+    "❌ 开启了【严格库存模式】，但您未挑选任何已有食材！": "❌ Strict inventory mode enabled, but no ingredients selected!",
+    "AI营养师正在根据您的医疗与过敏档案进行线性规划求解...": "AI Dietitian is running linear programming based on your medical profile...",
+    "📚 历史选择记录": "📚 Saved Meal Plans",
+    "### 📚 我的历史排餐记录": "### 📚 My Historical Meal Plans",
+    "没有找到历史记录。开始您的第一次排餐吧！": "No saved plans found. Start generating your first meal!",
+    "选择此方案": "Select this plan",
+    "✅ 方案已成功保存到您的历史记录中！": "✅ Meal plan successfully saved to your history!",
+    "🔄 刷新记录": "🔄 Refresh Records",
+    "🗑️ 删除已选": "🗑️ Delete Selected",
+    "⚠️ 请先勾选要删除的记录！": "⚠️ Please select records to delete first!",
+    "✅ 成功删除记录！": "✅ Successfully deleted records!",
+    "❌ 删除失败，请重试。": "❌ Deletion failed, please try again.",
+    
+    # === 新增：管理后台界面全量翻译 ===
+    "📊 系统管理后台": "📊 Admin Dashboard",
+    "系统功能导航": "System Menu Navigation",
+    "📈 平台数据大屏": "📈 Platform Analytics",
+    "🥦 基础食材库管理": "🥦 Ingredient Database",
+    "🥘 临床配方/菜谱管理": "🥘 Recipe Topology Manager",
+    "👥 患者画像监管": "👥 Patient Persona Matrix",
+
+    "全局运行数据大屏": "Global Live Statistics Screen",
+    "注册患者/用户数": "Total Registered Patients",
+    "菜谱知识库容量": "Recipe Knowledge Capacity",
+    "累计生成处方排餐": "Generated Clinical Prescriptions",
+    "🩺 糖尿病类型分布基线": "🩺 Diabetes Type Distribution Baseline",
+
+    "🥦 基础食材营养素数据库 (CRUD)": "🥦 Base Nutrients Database (CRUD)",
+    "当前数据库中已有的独立食材列表：": "Existing Ingredients Inventory in Database:",
+    "🔧 **新增或修改食材**": "🔧 Add or Modify Ingredient Node",
+    "💡 如果填写的【食材ID】存在，则会覆盖更新原属性；如果ID不存在，则作为新食材入库。": "💡 If the Ingredient ID already exists, it will overwrite properties; otherwise, a new item will be inserted.",
+    "食材ID * (如 ing_99)": "Ingredient ID * (e.g., ing_99)",
+    "中文名 *": "Chinese Title *",
+    "英文名": "English Title",
+    "热量 kcal": "Energy (kcal)",
+    "蛋白质 g": "Protein (g)",
+    "脂肪 g": "Fat (g)",
+    "碳水 g": "Carbs (g)",
+    "符合清真(Halal)": "Halal Compliance",
+    "属于纯素(Vegan)": "Vegan Formulation",
+    "GI(升糖)等级": "GI Glycemic Level",
+    "1:低GI | 2:中GI | 3:高GI": "1:Low GI | 2:Med GI | 3:High GI",
+    "✅ 提交(新增/覆盖)": "✅ Submit (Insert / Overwrite)",
+    "🎉 食材成分处理并入库成功！": "🎉 Ingredient successfully processed and saved!",
+    "🗑️ 危险操作区：删除食材": "🗑️ Danger Zone: Purge Ingredient",
+    "输入要彻底删除的食材ID：": "Type target Ingredient ID to delete:",
+    "🚨 确认删除该食材": "🚨 Terminate this Ingredient",
+    "已删除！": "Deleted!",
+    "删除失败": "Deletion failed",
+
+    "🥘 临床配方与菜谱关系网": "🥘 Clinical Recipe Graph Network",
+    "已存在的菜品组合档案：": "Current Valid Recipe Profiles in Graph:",
+    "➕ 构建新配方拓扑 (关联已有食材)": "➕ Construct Recipe Topology (Map Ingredients)",
+    "菜谱ID * (如 rec_10)": "Recipe ID * (e.g., rec_10)",
+    "菜谱中文名 *": "Recipe Chinese Name *",
+    "菜谱英文名": "Recipe English Name",
+    "菜品结构定位": "Meal Structure Classification",
+    "允许作为早餐?": "Applicable for Breakfast?",
+    "流质/汤羹属性?": "Liquid/Soup Attribute?",
+    "🔗 **绑定图数据库食材节点 (支持多选联合关联)**": "🔗 Bind Graph Database Ingredient Nodes (Multi-Select)",
+    "⚠️ 食材库当前为空，请先在【基础食材库管理】页签中添加底层食材！": "⚠️ Ingredient store is empty! Please populate ingredients first.",
+    "🥘 关联底层食材 (可搜索选择一至多个成分共同构成这道菜)": "🥘 Link Sub-Ingredients (Search and multi-select components)",
+    "点击或输入关键字搜索，支持多选...": "Type keyword to query ingredients...",
+    
+    # 🎯 核心按钮和提示翻译
+    "构建入图数据库": "Deploy to Graph Database (Create Recipe)",
+    "⚠️ 请填写完整的菜谱基础信息，并至少选择一个底层食材！": "⚠️ Mandatory parameters missing! Please attach at least one ingredient.",
+    "🎉 成功！新菜品": "🎉 Success! New dish ",
+    "已成功写入图数据库！": " has been pushed into the Graph Database!",
+    "❌ 录入失败原因": "❌ Deployment Failed Due to",
+    
+    "🗑️ 危险操作区：解绑并删除菜谱": "🗑️ Danger Zone: Unbind & Delete Recipe",
+    "输入要彻底删除的菜谱ID：": "Enter target Recipe ID to erase:",
+    "🚨 确认删除该菜谱": "🚨 Terminate this Recipe Portfolio",
+    "✅ 菜谱已从图数据库中彻底移除！": "✅ Recipe node has been unlinked and purged from Neo4j!",
+    
+    "👥 平台注册患者临床体征汇总": "👥 Aggregated Clinical Profiles of Registered Patients",
+    "膳食纤维 (g)": "Fiber (g)",
+    "钠 (mg)": "Sodium (mg)",
+    "添加糖 (g)": "Added Sugar (g)",
+    "烹饪工艺 (乘法溢出)": "Cooking Method (Multiplier)",
+    "调味基底 (隐形留白)": "Seasoning Profile (Invisible Base)",
+    "高钠预警": "High Sodium Alert",
+    # === 补全：管理后台新增导航与表头 ===
+    "🍱 智能食材与菜谱资产检索": "🍱 Smart Asset Search",
+    "📊 平台运营大屏": "📊 Operations Dashboard",
+    "食材ID": "Item ID",
+    "中文名": "Chinese Name",
+    "英文名": "English Name",
+    "热量 (kcal)": "Energy (kcal)",
+    "蛋白质 (g)": "Protein (g)",
+    "脂肪 (g)": "Fat (g)",
+    "碳水 (g)": "Carbs (g)",
+    "纤维 (g)": "Fiber (g)",
+    "钠 (mg)": "Sodium (mg)",
+    "糖 (g)": "Sugar (g)",
+    "清真": "Halal",
+    "纯素": "Vegan",
+    "GI等级": "GI Level",
+    "钾 (mg)": "Potassium (mg)",
+    "磷 (mg)": "Phosphorus (mg)",
+    "嘌呤 (mg)": "Purine (mg)",
+    
+    
+    # === 补全：历史记录双日历与动态文本 ===
+    "##### 📅 自定义方案追溯时间跨度筛选": "##### 📅 Custom Date Range Filter",
+    "起始查询日期": "Start Date",
+    "结束查询日期": "End Date",
+    "💡 在选定时间段内，共为您检索到 ": "💡 In the selected period, found ",
+    " 组排餐临床方案：": " clinical meal plans:",
+    # === 补全：操作提示与输入框占位符 ===
+    "如: 西兰花": "e.g., Broccoli",
+    "1:低GI | 2:中GI | 3:高GI": "1:Low GI | 2:Med GI | 3:High GI",
+    "输入食材名称、菜谱名称或其ID进行实时精确检索：": "Enter ingredient name, recipe name, or ID for real-time search:",
+    "例如：鸡胸肉 / 糖尿病低脂餐": "e.g., Chicken Breast / Diabetic Low-Fat Meal",
+
+    # === 补全：智能检索与资产大屏 ===
+    "📋 菜谱资产池": "📋 Recipe Asset Pool",
+    "🥦 系统食材库": "🥦 System Ingredient Library",
+    "💡 默认展示前10条数据，请通过上方搜索框查找特定资产。": "💡 Showing top 10 by default. Use search bar to find specific assets.",
+    "💡 默认展示前10条数据，请通过上方搜索框查找特定食材。": "💡 Showing top 10 by default. Use search bar to find specific ingredients.",
+    "未命名菜谱": "Unnamed Recipe",
+    "菜谱": "Recipe",
+    "移除菜谱": "Remove Recipe",
+    "警告：您正在请求从图数据库彻底抹除菜谱": "WARNING: You are requesting to permanently erase recipe ",
+    "此操作将同时解绑所有相关食材！": "This action will unbind all related ingredients!",
+    "确定！执行毁灭性删除": "Confirm! Execute Destructive Deletion",
+    "取消": "Cancel",
+    "已成功移出系统。": " successfully removed from the system.",
+    "未命名食材": "Unnamed Ingredient",
+    "食材": "Ingredient",
+    "每100g含": "Per 100g",
+    "大卡": "kcal",
+    "移除食材": "Remove Ingredient",
+    "确认提示：是否彻底从食材库中移除": "Confirm: Permanently remove ",
+    "确定删除": "Confirm Deletion",
+    "点错了": "Cancel",
+    "已移出资产库。": " removed from asset library.",
+
+    # === 补全：数据运营看板 ===
+    "排餐日期": "Meal Date",
+    "系统使用频次 (次)": "System Usage Frequency",
+    "暂无足够的历史排餐调度日志用于生成活跃度大屏。": "Not enough historical meal logs to generate activity dashboard.",
+    "**📅 每日用户留存与排餐活跃趋势 (折线图)**": "**📅 Daily User Retention & Meal Activity Trend (Line Chart)**",
+    "**📊 阶段服务并发压力分析 (柱状图)**": "**📊 Stage Service Concurrency Stress Analysis (Bar Chart)**",
+    "🧪 **物理流变约束：绑定烹饪参数与隐形调料**": "🧪 **Physics & Rheology: Bind Cooking Params & Invisible Seasoning**",
+
+    # === 补全：下拉框硬编码数组动态映射 ===
+    "CM_001:清蒸/水煮": "CM_001: Steamed/Boiled",
+    "CM_002:清炒/滑炒": "CM_002: Stir-fried",
+    "CM_003:红烧/炖煮": "CM_003: Braised/Stewed",
+    "CM_004:油炸/干煸": "CM_004: Deep-fried",
+    "CM_005:凉拌/生食": "CM_005: Cold/Raw",
+    "SP_001:清淡/原味": "SP_001: Light/Original",
+    "SP_002:家常咸鲜": "SP_002: Savory/Salty",
+    "SP_003:红烧/酱汁": "SP_003: Braised/Saucy",
+    "SP_004:糖醋/茄汁": "SP_004: Sweet & Sour",
+    "SP_005:麻辣/重油": "SP_005: Spicy/Heavy Oil",
+    # === 补全：管理后台大标题的精确匹配 ===
+    "📈 平台注册用户排餐活跃度综合看板": "📈 Platform User Meal Activity Dashboard",
+    "🔍 智能食材与菜谱资产检索": "🔍 Smart Ingredient & Recipe Asset Search",
+    # === 补全：患者画像表格的动态表头 ===
+    "血糖状况": "Diabetes Status",
+    "并发症": "Complications",
+    "过敏原": "Allergens",
+    "烹饪工艺 (乘法溢出)": "Cooking Method (Multiplier)",
+    # === 新增：高阶微量元素与临床并发症翻译 ===
+    "钾 (mg)": "Potassium (mg)",
+    "磷 (mg)": "Phosphorus (mg)",
+    "嘌呤 (mg)": "Purine (mg)",
+    "糖尿病肾病 (需严控蛋白质/钾/磷)": "Diabetic Nephropathy (Strict Protein/K/P Control)",
+    "高血压 (需清淡低钠)": "Hypertension (Low Sodium Diet)",
+    "高尿酸血症/痛风 (需低嘌呤)": "Hyperuricemia/Gout (Low Purine)"
+    
+}
+
+MAP_DICT = {
+    "gender": {"男性": "Male", "女性": "Female"},
+    "diabetes": {
+        "健康 (无糖尿病)": "Healthy (No Diabetes)", 
+        "糖尿病前期 / 妊娠期糖尿病": "Prediabetes / Gestational", 
+        "2型糖尿病": "Type 2 Diabetes"
+    },
+    "comps": {
+        # 👇 替换原有的两个选项，并新增痛风选项
+        "糖尿病肾病 (需严控蛋白质/钾/磷)": "Diabetic Nephropathy (Strict Protein/K/P Control)", 
+        "高血压 (需清淡低钠)": "Hypertension (Low Sodium Diet)",
+        "高尿酸血症/痛风 (需低嘌呤)": "Hyperuricemia/Gout (Low Purine)"
+    },
+    "meal": {
+        "早餐 (占全天30%)": "Breakfast (30%)",
+        "早午餐/Brunch (占全天50%)": "Brunch (50%)",
+        "午餐 (占全天40%)": "Lunch (40%)",
+        "晚餐 (占全天30%)": "Dinner (30%)"
+    },
+    "mode": {
+        "允许增添未有食材 (混合推荐)": "Allow missing ingredients (Mixed)",
+        "仅使用冰箱已有食材 (严格清理库存)": "Strictly use available ingredients"
+    },
+    "allergens": {
+        "Allium (五辛)": "Allium", 
+        "Shellfish (甲壳/贝类)": "Shellfish", 
+        "Fish (鱼类)": "Fish", 
+        "Peanut (花生)": "Peanut", 
+        "Tree Nuts (树坚果)": "Tree Nuts", 
+        "Sesame (芝麻)": "Sesame", 
+        "Soy (大豆)": "Soy", 
+        "Egg (蛋类)": "Egg", 
+        "Dairy (奶制品)": "Dairy"
+    }
+}

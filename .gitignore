@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+mai_env/
+.DS_Store
