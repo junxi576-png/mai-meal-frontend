@@ -298,7 +298,11 @@ else:
             st.cache_data.clear() 
             st.rerun()
 
-    nav_opts = [t("🍽️ 智能排餐控制台"), t("📚 历史选择记录"), t("⚙️ 个人档案与体征管理")]
+    nav_opts = [t("🍽️ 智能排餐控制台"), t("📚 历史选择记录"), t("💬 社区交流大厅"), t("⚙️ 个人档案与体征管理")]
+    if is_admin: nav_opts.append(t("📊 系统管理后台"))
+    
+    selected_nav = st.radio("主导航", nav_opts, horizontal=True, label_visibility="collapsed")
+    st.markdown("<hr style='margin-top:0; border-color:#444;'>", unsafe_allow_html=True)
     if is_admin: nav_opts.append(t("📊 系统管理后台"))
     
     selected_nav = st.radio("主导航", nav_opts, horizontal=True, label_visibility="collapsed")
@@ -377,6 +381,39 @@ else:
                         hist_html += "</div>"
                         st.markdown(hist_html, unsafe_allow_html=True)
 
+    elif selected_nav == t("💬 社区交流大厅"):
+            st.markdown(t("### 💬 临床营养互助社区"))
+            st.info("💡 这是一个慢节奏的留言板。在这里分享您的减脂控糖心得、讨论排餐方案吧！(受限于服务器资源，发言后页面会自动刷新)")
+            
+            if st.button("🔄 获取最新留言", use_container_width=True):
+                st.rerun()
+
+            st.divider()
+
+            messages = api_client.get_chat_messages()
+            chat_container = st.container(height=500)
+            
+            with chat_container:
+                if not messages:
+                    st.write("目前还没有人发言，来抢沙发吧！")
+                else:
+                    for msg in messages:
+                        avatar_url = msg.get('avatar') or f"https://api.dicebear.com/7.x/bottts/svg?seed={msg['username']}"
+                        with st.chat_message(name=msg['username'], avatar=avatar_url):
+                            st.markdown(f"**{msg['username']}** <span style='font-size: 0.8em; color: #888;'>({msg['timestamp']})</span>", unsafe_allow_html=True)
+                            st.write(msg['content'])
+            
+            # 输入框
+            if prompt := st.chat_input("说点什么吧..."):
+                with chat_container:
+                    with st.chat_message(name=user['username'], avatar=user.get('avatar')):
+                        st.write(prompt)
+                
+                if api_client.send_chat_message(user['username'], prompt):
+                    st.rerun() 
+                else:
+                    st.error("❌ 消息发送失败，可能是网络开小差了。")
+                    
     elif selected_nav == t("⚙️ 个人档案与体征管理"):
         st.markdown(t("### ⚙️ 更新我的健康档案"))
         st.info(t("在此处修改您的体征或过敏指标，更新后左侧状态和底层算法将自动同步生效。"))
