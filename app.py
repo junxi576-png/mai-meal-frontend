@@ -52,14 +52,11 @@ def compress_image_to_b64(uploaded_file, max_size=(256, 256), quality=80):
     """将用户上传的图片进行物理缩放、转为JPEG格式压缩后，再输出为 Base64"""
     try:
         image = Image.open(uploaded_file)
-        # 如果是 PNG 带有透明通道，或者其它模式，统一转为 RGB 防报错
         if image.mode in ("RGBA", "P"):
             image = image.convert("RGB")
             
-        # 等比例缩放（Thumbnail 会保持图片比例，不会拉伸变形）
         image.thumbnail(max_size)
         
-        # 存入内存缓冲区
         buffered = io.BytesIO()
         image.save(buffered, format="JPEG", quality=quality, optimize=True)
         
@@ -67,11 +64,9 @@ def compress_image_to_b64(uploaded_file, max_size=(256, 256), quality=80):
         return f"data:image/jpeg;base64,{b64_str}"
     except Exception as e:
         st.warning(f"⚠️ 图片压缩失败，正在尝试直接转换原图：{e}")
-        # 回退机制：如果压缩失败，直接把原图转成 base64
         bytes_data = uploaded_file.getvalue()
         b64_str = base64.b64encode(bytes_data).decode()
         return f"data:{uploaded_file.type};base64,{b64_str}"
-
 
 # 🚀 物理销毁残影处理
 if not st.session_state.logged_in:
@@ -104,7 +99,7 @@ if not st.session_state.logged_in:
                     f_age = st.number_input(t("请输入注册时预留的【年龄】验证"), 1, 120, 30, key="f_age")
                     f_new_pwd = st.text_input(t("输入新密码"), type="password", key="f_new_pwd")
                     if st.button(t("验证并重置"), use_container_width=True):
-                        if not f_user or not f_new_pwd: st.warning(t("请填写完整的用户名 and 新密码。"))
+                        if not f_user or not f_new_pwd: st.warning(t("请填写完整的用户名和新密码。"))
                         else:
                             if api_client.reset_password(f_user, f_age, f_new_pwd): st.success(t("✅ 密码重置成功！请直接登录。"))
                             else: st.error(t("❌ 用户名不存在，或预留的验证年龄不匹配！"))
@@ -151,7 +146,6 @@ if not st.session_state.logged_in:
                     else:
                         avatar_val = f"https://api.dicebear.com/7.x/bottts/svg?seed={r_user}" 
                         if r_avatar_file is not None:
-                            # 💡 核心：调用刚才写的压缩函数
                             avatar_val = compress_image_to_b64(r_avatar_file)
                         
                         default_bio = "这个人很懒，什么都没写~" if st.session_state.lang == 'zh' else "This person is lazy and wrote nothing~"
@@ -298,11 +292,8 @@ else:
             st.cache_data.clear() 
             st.rerun()
 
+    # ==================== 全局主导航控制 ====================
     nav_opts = [t("🍽️ 智能排餐控制台"), t("📚 历史选择记录"), t("💬 社区交流大厅"), t("⚙️ 个人档案与体征管理")]
-    if is_admin: nav_opts.append(t("📊 系统管理后台"))
-    
-    selected_nav = st.radio("主导航", nav_opts, horizontal=True, label_visibility="collapsed")
-    st.markdown("<hr style='margin-top:0; border-color:#444;'>", unsafe_allow_html=True)
     if is_admin: nav_opts.append(t("📊 系统管理后台"))
     
     selected_nav = st.radio("主导航", nav_opts, horizontal=True, label_visibility="collapsed")
@@ -382,38 +373,37 @@ else:
                         st.markdown(hist_html, unsafe_allow_html=True)
 
     elif selected_nav == t("💬 社区交流大厅"):
-            st.markdown(t("### 💬 临床营养互助社区"))
-            st.info("💡 这是一个慢节奏的留言板。在这里分享您的减脂控糖心得、讨论排餐方案吧！(受限于服务器资源，发言后页面会自动刷新)")
-            
-            if st.button("🔄 获取最新留言", use_container_width=True):
-                st.rerun()
+        st.markdown(t("### 💬 临床营养互助社区"))
+        st.info(t("💡 这是一个慢节奏的留言板。在这里分享您的减脂控糖心得、讨论排餐方案吧！(受限于服务器资源，发言后页面会自动刷新)"))
+        
+        if st.button(t("🔄 获取最新留言"), use_container_width=True):
+            st.rerun()
 
-            st.divider()
+        st.divider()
 
-            messages = api_client.get_chat_messages()
-            chat_container = st.container(height=500)
-            
+        messages = api_client.get_chat_messages()
+        chat_container = st.container(height=500)
+        
+        with chat_container:
+            if not messages:
+                st.write(t("目前还没有人发言，来抢沙发吧！"))
+            else:
+                for msg in messages:
+                    avatar_url = msg.get('avatar') or f"https://api.dicebear.com/7.x/bottts/svg?seed={msg['username']}"
+                    with st.chat_message(name=msg['username'], avatar=avatar_url):
+                        st.markdown(f"**{msg['username']}** <span style='font-size: 0.8em; color: #888;'>({msg['timestamp']})</span>", unsafe_allow_html=True)
+                        st.write(msg['content'])
+        
+        if prompt := st.chat_input(t("说点什么吧...")):
             with chat_container:
-                if not messages:
-                    st.write("目前还没有人发言，来抢沙发吧！")
-                else:
-                    for msg in messages:
-                        avatar_url = msg.get('avatar') or f"https://api.dicebear.com/7.x/bottts/svg?seed={msg['username']}"
-                        with st.chat_message(name=msg['username'], avatar=avatar_url):
-                            st.markdown(f"**{msg['username']}** <span style='font-size: 0.8em; color: #888;'>({msg['timestamp']})</span>", unsafe_allow_html=True)
-                            st.write(msg['content'])
+                with st.chat_message(name=user['username'], avatar=user.get('avatar')):
+                    st.write(prompt)
             
-            # 输入框
-            if prompt := st.chat_input("说点什么吧..."):
-                with chat_container:
-                    with st.chat_message(name=user['username'], avatar=user.get('avatar')):
-                        st.write(prompt)
-                
-                if api_client.send_chat_message(user['username'], prompt):
-                    st.rerun() 
-                else:
-                    st.error("❌ 消息发送失败，可能是网络开小差了。")
-                    
+            if api_client.send_chat_message(user['username'], prompt):
+                st.rerun() 
+            else:
+                st.error(t("❌ 消息发送失败，可能是网络开小差了。"))
+
     elif selected_nav == t("⚙️ 个人档案与体征管理"):
         st.markdown(t("### ⚙️ 更新我的健康档案"))
         st.info(t("在此处修改您的体征或过敏指标，更新后左侧状态和底层算法将自动同步生效。"))
@@ -453,7 +443,6 @@ else:
             if st.form_submit_button(t("💾 保存档案修改"), type="primary"):
                 avatar_val = user.get('avatar', '')
                 if e_avatar_file is not None:
-                    # 💡 核心：调用压缩函数
                     avatar_val = compress_image_to_b64(e_avatar_file)
                 
                 if api_client.update_profile({
@@ -609,7 +598,7 @@ else:
             else: st.session_state.gen_meals = []
 
         st.divider()
-        if st.button(t("🪄 引擎启动：生成专属 clinical配餐"), type="primary", use_container_width=True):
+        if st.button(t("🪄 引擎启动：生成专属 clinical 配餐"), type="primary", use_container_width=True):
             if "严格" in source_mode and not total_sel: st.error(t("❌ 开启了【严格库存模式】，但您未挑选任何已有食材！"))
             else: run_generation(is_new=True)
 
