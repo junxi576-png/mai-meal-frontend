@@ -49,7 +49,6 @@ def fetch_admin_activity_stats(): return api_client.get_admin_activity_stats()
 # 🛡️ 核心强化：前置图片无损压缩机制 (防数据库撑爆)
 # =========================================================================
 def compress_image_to_b64(uploaded_file, max_size=(256, 256), quality=80):
-    """将用户上传的图片进行物理缩放、转为JPEG格式压缩后，再输出为 Base64"""
     try:
         image = Image.open(uploaded_file)
         if image.mode in ("RGBA", "P"):
@@ -68,7 +67,6 @@ def compress_image_to_b64(uploaded_file, max_size=(256, 256), quality=80):
         b64_str = base64.b64encode(bytes_data).decode()
         return f"data:{uploaded_file.type};base64,{b64_str}"
 
-# 🚀 物理销毁残影处理
 if not st.session_state.logged_in:
     auth_placeholder = st.empty() 
     
@@ -85,6 +83,10 @@ if not st.session_state.logged_in:
                 if st.button(t("登 录"), use_container_width=True, type="primary"):
                     success, user_data = api_client.login(l_user, l_pwd)
                     if success:
+                        # 💡 源头兜底：如果后端传来的 avatar 是空的，立刻分配专属默认头像
+                        if not user_data.get('avatar'):
+                            user_data['avatar'] = f"https://api.dicebear.com/7.x/bottts/svg?seed={user_data['username']}"
+                            
                         st.session_state.logged_in = True
                         st.session_state.user_profile = user_data
                         auth_placeholder.empty()
@@ -158,8 +160,26 @@ if not st.session_state.logged_in:
                         })
                         if success: 
                             st.balloons()
-                            st.success(t("✅ 注册成功！档案建立完成！请返回【🔐 账号登录】。"))
-                        else: st.error(msg)
+                            st.success(t("✅ 注册成功！档案建立完成！正在为您自动登录..."))
+                            
+                            # 稍微停顿一下，让用户看清楚绿色的成功提示和气球动画
+                            time.sleep(1.5) 
+                            
+                            # 🚀 自动登录逻辑：直接使用刚刚注册的账号密码请求登录
+                            login_success, user_data = api_client.login(r_user, r_pwd)
+                            if login_success:
+                                # 同样补上头像兜底逻辑
+                                if not user_data.get('avatar'):
+                                    user_data['avatar'] = f"https://api.dicebear.com/7.x/bottts/svg?seed={user_data['username']}"
+                                
+                                st.session_state.logged_in = True
+                                st.session_state.user_profile = user_data
+                                auth_placeholder.empty()
+                                st.rerun() # 刷新页面，直接进入主系统
+                            else:
+                                st.error(t("自动登录失败，请手动切换到登录页面。"))
+                        else: 
+                            st.error(msg)
 
 else:
     recipes_db = cached_recipes()
@@ -176,9 +196,6 @@ else:
     user = st.session_state.user_profile
     is_admin = (user['username'].lower() == 'admin') 
 
-    # =========================================================================
-    # 🧠 核心增强：实时统计今日已摄入所有营养素总量及配额，区分不同餐次
-    # =========================================================================
     bmr = (10 * user['weight']) + (6.25 * user['height']) - (5 * user['age']) + (5 if user['gender']=="男性" else -161)
     tdee = bmr * 1.2 
     current_deficit = st.session_state.get("deficit_slider", 300) 
@@ -210,6 +227,65 @@ else:
                     pass
                     
     today_saves_count = len(today_saved_types)
+
+    # ==================== 🛠️ 个人档案弹窗函数 ====================
+    @st.dialog(t("⚙️ 更新我的健康档案"))
+    def profile_update_dialog():
+        st.info(t("在此处修改您的体征或过敏指标，更新后左侧状态和底层算法将自动同步生效。"))
+        with st.form("profile_update_form"):
+            e_email = st.text_input("📧 " + (t("邮箱") if st.session_state.lang=='zh' else "Email"), value=user.get('email', ''))
+            e_avatar_file = st.file_uploader("🖼️ " + (t("上传新头像 (留空则保持当前头像)") if st.session_state.lang=='zh' else "Upload New Avatar (Leave empty to keep current)"), type=["png", "jpg", "jpeg"])
+            e_bio = st.text_area("📝 " + (t("个人简介") if st.session_state.lang=='zh' else "Bio"), value=user.get('bio', ''))
+            st.divider()
+            
+            c1, c2 = st.columns(2)
+            e_gender = c1.selectbox(t("性别"), ["男性", "女性"], index=0 if user['gender']=="男性" else 1, format_func=lambda x: tf('gender', x))
+            e_age = c2.number_input(t("年龄"), 1, 120, int(user['age']))
+            
+            c3, c4 = st.columns(2)
+            e_height = c3.number_input(t("身高 (cm)"), 50, 250, int(user['height']))
+            e_weight = c4.number_input(t("体重 (kg)"), 20, 300, int(user['weight']))
+            st.divider()
+            
+            diabetes_options = ["健康 (无糖尿病)", "糖尿病前期 / 妊娠期糖尿病", "2型糖尿病"]
+            e_diabetes = st.radio(t("您的血糖状况属于："), diabetes_options, index=diabetes_options.index(user['diabetes_status']), format_func=lambda x: tf('diabetes', x))
+            
+            comps_options = ["糖尿病肾病 (需严控蛋白质/钾/磷)", "高血压 (需清淡低钠)", "高尿酸血症/痛风 (需低嘌呤)"]
+            safe_comps = []
+            for c in user.get('complications', []):
+                if c in comps_options: safe_comps.append(c)
+                elif "肾病" in c: safe_comps.append("糖尿病肾病 (需严控蛋白质/钾/磷)")
+                elif "高血压" in c: safe_comps.append("高血压 (需清淡低钠)")
+                    
+            e_comps = st.multiselect(t("是否伴有以下代谢并发症："), comps_options, default=safe_comps, format_func=lambda x: tf('comps', x))
+            allergens_options = ["Allium (五辛)", "Shellfish (甲壳/贝类)", "Fish (鱼类)", "Peanut (花生)", "Tree Nuts (树坚果)", "Sesame (芝麻)", "Soy (大豆)", "Egg (蛋类)", "Dairy (奶制品)"]
+            safe_allergens = [a for a in user.get('allergens', []) if a in allergens_options]
+            e_allergens = st.multiselect(t("是否有以下食物过敏史："), allergens_options, default=safe_allergens, format_func=lambda x: tf('allergens', x))
+            
+            e_halal = st.checkbox(t("☪️ 严格清真 (Halal)"), value=user.get('is_halal', False))
+            
+            if st.form_submit_button(t("💾 保存档案修改"), type="primary"):
+                avatar_val = user.get('avatar', '')
+                if e_avatar_file is not None:
+                    avatar_val = compress_image_to_b64(e_avatar_file)
+                
+                # 💡 更新兜底：防止头像被意外置空
+                if not avatar_val:
+                    avatar_val = f"https://api.dicebear.com/7.x/bottts/svg?seed={user['username']}"
+                
+                if api_client.update_profile({
+                    "username": user['username'], "age": e_age, "height": e_height, "weight": e_weight, 
+                    "gender": e_gender, "diabetes": e_diabetes, "comps": e_comps, "allergens": e_allergens, 
+                    "is_halal": e_halal, "email": e_email, "avatar": avatar_val, "bio": e_bio
+                }):
+                    st.session_state.user_profile.update({
+                        "age": e_age, "height": e_height, "weight": e_weight, "gender": e_gender,
+                        "diabetes_status": e_diabetes, "complications": e_comps, "allergens": e_allergens, 
+                        "is_halal": e_halal, "email": e_email, "avatar": avatar_val, "bio": e_bio
+                    })
+                    st.success(t("✅ 档案更新成功！正在为您重新加载..."))
+                    time.sleep(0.3)
+                    st.rerun()
 
     with st.sidebar:
         # ==================== 侧边栏：头像与个人简介区 ====================
@@ -286,6 +362,11 @@ else:
         st.progress(min(today_saves_count / 3.0, 1.0))
         
         st.divider()
+        
+        # 按钮：触发个人档案更新弹窗
+        if st.button("⚙️ " + (t("更新我的健康档案") if st.session_state.lang == 'zh' else "Update My Profile"), use_container_width=True):
+            profile_update_dialog()
+            
         if st.button(t("🚪 退出登录"), use_container_width=True):
             st.session_state.logged_in = False
             st.session_state.user_profile = {}
@@ -293,7 +374,7 @@ else:
             st.rerun()
 
     # ==================== 全局主导航控制 ====================
-    nav_opts = [t("🍽️ 智能排餐控制台"), t("📚 历史选择记录"), t("💬 社区交流大厅"), t("⚙️ 个人档案与体征管理")]
+    nav_opts = [t("🍽️ 智能排餐控制台"), t("📚 历史选择记录"), t("💬 社区交流大厅")]
     if is_admin: nav_opts.append(t("📊 系统管理后台"))
     
     selected_nav = st.radio("主导航", nav_opts, horizontal=True, label_visibility="collapsed")
@@ -396,68 +477,14 @@ else:
         
         if prompt := st.chat_input(t("说点什么吧...")):
             with chat_container:
-                with st.chat_message(name=user['username'], avatar=user.get('avatar')):
+                current_avatar = user.get('avatar') or f"https://api.dicebear.com/7.x/bottts/svg?seed={user['username']}"
+                with st.chat_message(name=user['username'], avatar=current_avatar):
                     st.write(prompt)
             
             if api_client.send_chat_message(user['username'], prompt):
                 st.rerun() 
             else:
                 st.error(t("❌ 消息发送失败，可能是网络开小差了。"))
-
-    elif selected_nav == t("⚙️ 个人档案与体征管理"):
-        st.markdown(t("### ⚙️ 更新我的健康档案"))
-        st.info(t("在此处修改您的体征或过敏指标，更新后左侧状态和底层算法将自动同步生效。"))
-        with st.form("profile_update_form"):
-            
-            e_email = st.text_input("📧 " + (t("邮箱") if st.session_state.lang=='zh' else "Email"), value=user.get('email', ''))
-            e_avatar_file = st.file_uploader("🖼️ " + (t("上传新头像 (留空则保持当前头像)") if st.session_state.lang=='zh' else "Upload New Avatar (Leave empty to keep current)"), type=["png", "jpg", "jpeg"])
-            e_bio = st.text_area("📝 " + (t("个人简介") if st.session_state.lang=='zh' else "Bio"), value=user.get('bio', ''))
-            st.divider()
-            
-            c1, c2 = st.columns(2)
-            e_gender = c1.selectbox(t("性别"), ["男性", "女性"], index=0 if user['gender']=="男性" else 1, format_func=lambda x: tf('gender', x))
-            e_age = c2.number_input(t("年龄"), 1, 120, int(user['age']))
-            
-            c3, c4 = st.columns(2)
-            e_height = c3.number_input(t("身高 (cm)"), 50, 250, int(user['height']))
-            e_weight = c4.number_input(t("体重 (kg)"), 20, 300, int(user['weight']))
-            st.divider()
-            
-            diabetes_options = ["健康 (无糖尿病)", "糖尿病前期 / 妊娠期糖尿病", "2型糖尿病"]
-            e_diabetes = st.radio(t("您的血糖状况属于："), diabetes_options, index=diabetes_options.index(user['diabetes_status']), format_func=lambda x: tf('diabetes', x))
-            
-            comps_options = ["糖尿病肾病 (需严控蛋白质/钾/磷)", "高血压 (需清淡低钠)", "高尿酸血症/痛风 (需低嘌呤)"]
-            safe_comps = []
-            for c in user.get('complications', []):
-                if c in comps_options: safe_comps.append(c)
-                elif "肾病" in c: safe_comps.append("糖尿病肾病 (需严控蛋白质/钾/磷)")
-                elif "高血压" in c: safe_comps.append("高血压 (需清淡低钠)")
-                    
-            e_comps = st.multiselect(t("是否伴有以下代谢并发症："), comps_options, default=safe_comps, format_func=lambda x: tf('comps', x))
-            allergens_options = ["Allium (五辛)", "Shellfish (甲壳/贝类)", "Fish (鱼类)", "Peanut (花生)", "Tree Nuts (树坚果)", "Sesame (芝麻)", "Soy (大豆)", "Egg (蛋类)", "Dairy (奶制品)"]
-            safe_allergens = [a for a in user.get('allergens', []) if a in allergens_options]
-            e_allergens = st.multiselect(t("是否有以下食物过敏史："), allergens_options, default=safe_allergens, format_func=lambda x: tf('allergens', x))
-            
-            e_halal = st.checkbox(t("☪️ 严格清真 (Halal)"), value=user.get('is_halal', False))
-            
-            if st.form_submit_button(t("💾 保存档案修改"), type="primary"):
-                avatar_val = user.get('avatar', '')
-                if e_avatar_file is not None:
-                    avatar_val = compress_image_to_b64(e_avatar_file)
-                
-                if api_client.update_profile({
-                    "username": user['username'], "age": e_age, "height": e_height, "weight": e_weight, 
-                    "gender": e_gender, "diabetes": e_diabetes, "comps": e_comps, "allergens": e_allergens, 
-                    "is_halal": e_halal, "email": e_email, "avatar": avatar_val, "bio": e_bio
-                }):
-                    st.session_state.user_profile.update({
-                        "age": e_age, "height": e_height, "weight": e_weight, "gender": e_gender,
-                        "diabetes_status": e_diabetes, "complications": e_comps, "allergens": e_allergens, 
-                        "is_halal": e_halal, "email": e_email, "avatar": avatar_val, "bio": e_bio
-                    })
-                    st.success(t("✅ 档案更新成功！正在为您重新加载..."))
-                    time.sleep(0.3)
-                    st.rerun()
 
     elif selected_nav == t("🍽️ 智能排餐控制台"):
         

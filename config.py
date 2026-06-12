@@ -302,7 +302,9 @@ EN_DICT = {
     "搜索已有菜谱组合档案 (支持名称或ID)": "Search Existing Recipe Profiles (Name or ID)",
     "构建新配方拓扑": "Construct New Recipe Topology",
     "💡 点击选中行数据后，可在下方快捷查看明细或批量删除。": "💡 Select rows to view details or batch delete below.",
-    "查看配方详情": "View Recipe Details"
+    "查看配方详情": "View Recipe Details",
+    "✅ 注册成功！档案建立完成！正在为您自动登录...": "✅ Registration successful! Logging you in automatically...",
+    "自动登录失败，请手动切换到登录页面。": "Auto-login failed, please switch to login page manually."
     
 }
 
