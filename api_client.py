@@ -153,3 +153,22 @@ def send_chat_message(username, content):
         res = http_session.post(f"{BASE_URL}/chat/send", json={"username": username, "content": content}, timeout=REQ_TIMEOUT)
         return res.status_code == 200
     except Exception: return False
+
+# ==================== 🛠️ 管理员对用户专属操作 API 调用 ====================
+def admin_reset_user_password(username):
+    try:
+        res = http_session.post(f"{BASE_URL}/admin/users/reset", json={"username": username}, timeout=REQ_TIMEOUT)
+        return res.status_code == 200
+    except Exception: return False
+
+def admin_send_user_message(username, message):
+    try:
+        res = http_session.post(f"{BASE_URL}/admin/users/message", json={"username": username, "message": message}, timeout=REQ_TIMEOUT)
+        return res.status_code == 200
+    except Exception: return False
+
+def clear_user_message(username):
+    try:
+        res = http_session.post(f"{BASE_URL}/user/clear_message", json={"username": username}, timeout=REQ_TIMEOUT)
+        return res.status_code == 200
+    except Exception: return False

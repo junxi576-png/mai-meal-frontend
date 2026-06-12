@@ -304,7 +304,21 @@ EN_DICT = {
     "💡 点击选中行数据后，可在下方快捷查看明细或批量删除。": "💡 Select rows to view details or batch delete below.",
     "查看配方详情": "View Recipe Details",
     "✅ 注册成功！档案建立完成！正在为您自动登录...": "✅ Registration successful! Logging you in automatically...",
-    "自动登录失败，请手动切换到登录页面。": "Auto-login failed, please switch to login page manually."
+    "自动登录失败，请手动切换到登录页面。": "Auto-login failed, please switch to login page manually.",
+    "📩 **来自管理员的私信留言**": "📩 **Direct Message from Admin**",
+    "✅ 已读 / 清除留言": "✅ Mark as Read / Clear",
+    "⚙️ 患者独立管控台: ": "⚙️ Patient Management Dashboard: ",
+    "🍽️ TA的排餐追踪": "🍽️ Meal Tracking",
+    "🛠️ 账号与通知下发": "🛠️ Account & Notification",
+    "该患者暂无历史排餐记录。": "No meal history for this patient yet.",
+    "✉️ 发送患者私信 (侧边栏置顶)": "✉️ Send Direct Message (Sidebar Pinned)",
+    "输入要通知患者的内容...": "Enter notification content...",
+    "📤 下发通知": "📤 Send Notification",
+    "✅ 留言下发成功！患者下次登录可见。": "✅ Notification sent! Patient will see it next login.",
+    "⚠️ 请输入留言内容": "⚠️ Please enter message content",
+    "🔐 危险操作 (安全管控)": "🔐 Danger Zone (Security Control)",
+    "⚠️ 强制重置密码为 123456": "⚠️ Force Reset Password to 123456",
+    "✅ 密码重置成功！": "✅ Password reset successful!"
     
 }
 

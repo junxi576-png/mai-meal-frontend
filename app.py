@@ -23,7 +23,6 @@ with c_lang:
     lang_mode = st.radio("🌐 Language", ["中文", "English"], index=0 if st.session_state.lang=='zh' else 1, horizontal=True, label_visibility="collapsed")
     st.session_state.lang = 'zh' if lang_mode == "中文" else 'en'
 
-# 全局 API 缓存层
 @st.cache_data(show_spinner=False, ttl=600)
 def cached_recipes(): return api_client.get_recipes()
 
@@ -45,20 +44,13 @@ def fetch_admin_users(): return api_client.get_admin_users()
 @st.cache_data(show_spinner=False, ttl=300)
 def fetch_admin_activity_stats(): return api_client.get_admin_activity_stats()
 
-# =========================================================================
-# 🛡️ 核心强化：前置图片无损压缩机制 (防数据库撑爆)
-# =========================================================================
 def compress_image_to_b64(uploaded_file, max_size=(256, 256), quality=80):
     try:
         image = Image.open(uploaded_file)
-        if image.mode in ("RGBA", "P"):
-            image = image.convert("RGB")
-            
+        if image.mode in ("RGBA", "P"): image = image.convert("RGB")
         image.thumbnail(max_size)
-        
         buffered = io.BytesIO()
         image.save(buffered, format="JPEG", quality=quality, optimize=True)
-        
         b64_str = base64.b64encode(buffered.getvalue()).decode()
         return f"data:image/jpeg;base64,{b64_str}"
     except Exception as e:
@@ -69,7 +61,6 @@ def compress_image_to_b64(uploaded_file, max_size=(256, 256), quality=80):
 
 if not st.session_state.logged_in:
     auth_placeholder = st.empty() 
-    
     with auth_placeholder.container():
         st.markdown(f"<h1 style='text-align: center; color: #00c853;'>{t('MAI 临床智能营养师')}</h1>", unsafe_allow_html=True)
         st.markdown(f"<p style='text-align: center; color: #888;'>{t('精准医学营养治疗 (MNT) 排餐引擎')}</p><br>", unsafe_allow_html=True)
@@ -83,10 +74,8 @@ if not st.session_state.logged_in:
                 if st.button(t("登 录"), use_container_width=True, type="primary"):
                     success, user_data = api_client.login(l_user, l_pwd)
                     if success:
-                        # 💡 源头兜底：如果后端传来的 avatar 是空的，立刻分配专属默认头像
                         if not user_data.get('avatar'):
                             user_data['avatar'] = f"https://api.dicebear.com/7.x/bottts/svg?seed={user_data['username']}"
-                            
                         st.session_state.logged_in = True
                         st.session_state.user_profile = user_data
                         auth_placeholder.empty()
@@ -110,10 +99,8 @@ if not st.session_state.logged_in:
                 st.info(t("💡 建立您的永久健康档案，AI 营养师将终身为您排忧解难。"))
                 r_user = st.text_input(t("设置用户名 (仅限英文、数字、下划线，3-20位)"), key="r_user")
                 r_pwd = st.text_input(t("设置密码"), type="password", key="r_pwd")
-                
                 r_email = st.text_input("邮箱 (可选)" if st.session_state.lang == 'zh' else "Email (Optional)", key="r_email")
                 r_avatar_file = st.file_uploader("🖼️ " + ("上传头像 (可选)" if st.session_state.lang == 'zh' else "Upload Avatar (Optional)"), type=["png", "jpg", "jpeg"], key="r_avatar")
-                
                 st.divider()
                 st.markdown(t("#### 👤 基础体征"))
                 c1, c2 = st.columns(2)
@@ -123,21 +110,13 @@ if not st.session_state.logged_in:
                 r_height = c3.number_input(t("身高 (cm)"), 50, 250, 170, key="rh")
                 r_weight = c4.number_input(t("体重 (kg)"), 20, 300, 70, key="rw")
                 st.divider()
-                
                 st.markdown(t("#### 🩺 临床与过敏筛查"))
                 diab_opts = ["健康 (无糖尿病)", "糖尿病前期 / 妊娠期糖尿病", "2型糖尿病"]
                 r_diabetes = st.radio(t("您的血糖状况属于："), diab_opts, format_func=lambda x: tf('diabetes', x), key="rd")
-                
-                comp_opts = [
-                    "糖尿病肾病 (需严控蛋白质/钾/磷)", 
-                    "高血压 (需清淡低钠)", 
-                    "高尿酸血症/痛风 (需低嘌呤)"
-                ]
+                comp_opts = ["糖尿病肾病 (需严控蛋白质/钾/磷)", "高血压 (需清淡低钠)", "高尿酸血症/痛风 (需低嘌呤)"]
                 r_comps = st.multiselect(t("是否伴有以下代谢并发症："), comp_opts, format_func=lambda x: tf('comps', x), key="rc")
-                
                 allergen_opts = ["Allium (五辛)", "Shellfish (甲壳/贝类)", "Fish (鱼类)", "Peanut (花生)", "Tree Nuts (树坚果)", "Sesame (芝麻)", "Soy (大豆)", "Egg (蛋类)", "Dairy (奶制品)"]
                 r_allergens = st.multiselect(t("是否有以下食物过敏史："), allergen_opts, format_func=lambda x: tf('allergens', x), key="ral")
-                
                 r_halal = st.checkbox(t("☪️ 严格清真 (Halal)"), key="r_halal")
                 
                 if st.button(t("💾 注册并生成我的健康档案"), use_container_width=True, type="primary"):
@@ -147,11 +126,8 @@ if not st.session_state.logged_in:
                         st.error(t("❌ 用户名格式不符：只能包含英文、数字和下划线，且长度在 3-20 位之间。"))
                     else:
                         avatar_val = f"https://api.dicebear.com/7.x/bottts/svg?seed={r_user}" 
-                        if r_avatar_file is not None:
-                            avatar_val = compress_image_to_b64(r_avatar_file)
-                        
+                        if r_avatar_file is not None: avatar_val = compress_image_to_b64(r_avatar_file)
                         default_bio = "这个人很懒，什么都没写~" if st.session_state.lang == 'zh' else "This person is lazy and wrote nothing~"
-                        
                         success, msg = api_client.register({
                             "username": r_user, "password": r_pwd, "age": r_age, "height": r_height, 
                             "weight": r_weight, "gender": r_gender, "diabetes": r_diabetes, 
@@ -161,25 +137,16 @@ if not st.session_state.logged_in:
                         if success: 
                             st.balloons()
                             st.success(t("✅ 注册成功！档案建立完成！正在为您自动登录..."))
-                            
-                            # 稍微停顿一下，让用户看清楚绿色的成功提示和气球动画
                             time.sleep(1.5) 
-                            
-                            # 🚀 自动登录逻辑：直接使用刚刚注册的账号密码请求登录
                             login_success, user_data = api_client.login(r_user, r_pwd)
                             if login_success:
-                                # 同样补上头像兜底逻辑
-                                if not user_data.get('avatar'):
-                                    user_data['avatar'] = f"https://api.dicebear.com/7.x/bottts/svg?seed={user_data['username']}"
-                                
+                                if not user_data.get('avatar'): user_data['avatar'] = f"https://api.dicebear.com/7.x/bottts/svg?seed={user_data['username']}"
                                 st.session_state.logged_in = True
                                 st.session_state.user_profile = user_data
                                 auth_placeholder.empty()
-                                st.rerun() # 刷新页面，直接进入主系统
-                            else:
-                                st.error(t("自动登录失败，请手动切换到登录页面。"))
-                        else: 
-                            st.error(msg)
+                                st.rerun() 
+                            else: st.error(t("自动登录失败，请手动切换到登录页面。"))
+                        else: st.error(msg)
 
 else:
     recipes_db = cached_recipes()
@@ -205,9 +172,7 @@ else:
     raw_history_data = cached_history(user['username'])
     
     today_totals = {"k": 0.0, "na": 0.0, "potassium": 0.0, "phosphorus": 0.0, "purine": 0.0, "sugar": 0.0}
-    
     today_saved_types = {}
-    
     if raw_history_data:
         for rec in raw_history_data:
             ts = rec.get("timestamp", "")
@@ -223,12 +188,10 @@ else:
                     today_totals["phosphorus"] += totals.get("phosphorus", 0.0)
                     today_totals["purine"] += totals.get("purine", 0.0)
                     today_totals["sugar"] += totals.get("sugar", 0.0)
-                except Exception:
-                    pass
+                except Exception: pass
                     
     today_saves_count = len(today_saved_types)
 
-    # ==================== 🛠️ 个人档案弹窗函数 ====================
     @st.dialog(t("⚙️ 更新我的健康档案"))
     def profile_update_dialog():
         st.info(t("在此处修改您的体征或过敏指标，更新后左侧状态和底层算法将自动同步生效。"))
@@ -237,41 +200,31 @@ else:
             e_avatar_file = st.file_uploader("🖼️ " + (t("上传新头像 (留空则保持当前头像)") if st.session_state.lang=='zh' else "Upload New Avatar (Leave empty to keep current)"), type=["png", "jpg", "jpeg"])
             e_bio = st.text_area("📝 " + (t("个人简介") if st.session_state.lang=='zh' else "Bio"), value=user.get('bio', ''))
             st.divider()
-            
             c1, c2 = st.columns(2)
             e_gender = c1.selectbox(t("性别"), ["男性", "女性"], index=0 if user['gender']=="男性" else 1, format_func=lambda x: tf('gender', x))
             e_age = c2.number_input(t("年龄"), 1, 120, int(user['age']))
-            
             c3, c4 = st.columns(2)
             e_height = c3.number_input(t("身高 (cm)"), 50, 250, int(user['height']))
             e_weight = c4.number_input(t("体重 (kg)"), 20, 300, int(user['weight']))
             st.divider()
-            
             diabetes_options = ["健康 (无糖尿病)", "糖尿病前期 / 妊娠期糖尿病", "2型糖尿病"]
             e_diabetes = st.radio(t("您的血糖状况属于："), diabetes_options, index=diabetes_options.index(user['diabetes_status']), format_func=lambda x: tf('diabetes', x))
-            
             comps_options = ["糖尿病肾病 (需严控蛋白质/钾/磷)", "高血压 (需清淡低钠)", "高尿酸血症/痛风 (需低嘌呤)"]
             safe_comps = []
             for c in user.get('complications', []):
                 if c in comps_options: safe_comps.append(c)
                 elif "肾病" in c: safe_comps.append("糖尿病肾病 (需严控蛋白质/钾/磷)")
                 elif "高血压" in c: safe_comps.append("高血压 (需清淡低钠)")
-                    
             e_comps = st.multiselect(t("是否伴有以下代谢并发症："), comps_options, default=safe_comps, format_func=lambda x: tf('comps', x))
             allergens_options = ["Allium (五辛)", "Shellfish (甲壳/贝类)", "Fish (鱼类)", "Peanut (花生)", "Tree Nuts (树坚果)", "Sesame (芝麻)", "Soy (大豆)", "Egg (蛋类)", "Dairy (奶制品)"]
             safe_allergens = [a for a in user.get('allergens', []) if a in allergens_options]
             e_allergens = st.multiselect(t("是否有以下食物过敏史："), allergens_options, default=safe_allergens, format_func=lambda x: tf('allergens', x))
-            
             e_halal = st.checkbox(t("☪️ 严格清真 (Halal)"), value=user.get('is_halal', False))
             
             if st.form_submit_button(t("💾 保存档案修改"), type="primary"):
                 avatar_val = user.get('avatar', '')
-                if e_avatar_file is not None:
-                    avatar_val = compress_image_to_b64(e_avatar_file)
-                
-                # 💡 更新兜底：防止头像被意外置空
-                if not avatar_val:
-                    avatar_val = f"https://api.dicebear.com/7.x/bottts/svg?seed={user['username']}"
+                if e_avatar_file is not None: avatar_val = compress_image_to_b64(e_avatar_file)
+                if not avatar_val: avatar_val = f"https://api.dicebear.com/7.x/bottts/svg?seed={user['username']}"
                 
                 if api_client.update_profile({
                     "username": user['username'], "age": e_age, "height": e_height, "weight": e_weight, 
@@ -288,7 +241,6 @@ else:
                     st.rerun()
 
     with st.sidebar:
-        # ==================== 侧边栏：头像与个人简介区 ====================
         avatar_url = user.get('avatar') or f"https://api.dicebear.com/7.x/bottts/svg?seed={user['username']}"
         user_email = user.get('email') or ("未绑定邮箱" if st.session_state.lang == 'zh' else "No Email Bound")
         user_bio = user.get('bio') or ("这个人很懒，什么都没写~" if st.session_state.lang == 'zh' else "This person is lazy and wrote nothing~")
@@ -317,66 +269,60 @@ else:
                 if "肾病" in c: display_c = "糖尿病肾病 (需严控蛋白质/钾/磷)"
                 elif "高血压" in c: display_c = "高血压 (需清淡低钠)"
                 st.markdown(f"🔹 {tf('comps', display_c)}")
-        
-        if user.get('is_halal'):
-            st.markdown(f"🔹 {t('☪️ 严格清真 (Halal)')}")
-                
+        if user.get('is_halal'): st.markdown(f"🔹 {t('☪️ 严格清真 (Halal)')}")
         if user.get('allergens'):
             lbl = "🚫 **Blocked Allergens**:" if st.session_state.lang == 'en' else "🚫 **已拦截过敏原**:"
             translated_allergens = [tf('allergens', a) for a in user['allergens']]
             st.markdown(f"{lbl} <br><span style='color:#ff4b4b; font-size:0.9em;'>{', '.join(translated_allergens)}</span>", unsafe_allow_html=True)
         
+        # 💡 新增功能：侧边栏接收并展示管理员的置顶私信留言
+        if user.get('unread_msg') and user.get('admin_msg'):
+            st.markdown("---")
+            st.warning(t("📩 **来自管理员的私信留言**"))
+            st.info(user['admin_msg'])
+            if st.button(t("✅ 已读 / 清除留言"), use_container_width=True):
+                if api_client.clear_user_message(user['username']):
+                    st.session_state.user_profile['unread_msg'] = False
+                    st.rerun()
+
         st.divider()
         st.markdown(f"#### 📊 {t('今日营养达成看板')}")
-        
         k_pct = (today_totals["k"] / daily_target_kcal) if daily_target_kcal > 0 else 0
         st.markdown(f"🌅 {t('热量达成率')}: **{today_totals['k']:.0f}** / {daily_target_kcal:.0f} kcal ({k_pct*100:.0f}%)")
         st.progress(min(k_pct, 1.0))
-        
         na_pct = min(today_totals["na"] / 2000.0, 1.0)
         st.markdown(f"🧂 {t('钠安全配额')}: **{today_totals['na']:.0f}** / 2000 mg")
         st.progress(na_pct)
-        
         k_limit = 1000.0 if any("肾病" in str(c) for c in user.get('complications', [])) else 2000.0
         pot_pct = min(today_totals["potassium"] / k_limit, 1.0)
         st.markdown(f"🍌 {t('钾安全配额')}: **{today_totals['potassium']:.0f}** / {k_limit:.0f} mg")
         st.progress(pot_pct)
-        
         pho_limit = 400.0 if any("肾病" in str(c) for c in user.get('complications', [])) else 800.0
         pho_pct = min(today_totals["phosphorus"] / pho_limit, 1.0)
         st.markdown(f"🦴 {t('磷安全配额')}: **{today_totals['phosphorus']:.0f}** / {pho_limit:.0f} mg")
         st.progress(pho_pct)
-        
         pur_limit = 150.0 if any("痛风" in str(c) or "尿酸" in str(c) for c in user.get('complications', [])) else 300.0
         pur_pct = min(today_totals["purine"] / pur_limit, 1.0)
         st.markdown(f"🧬 {t('嘌呤配额')}: **{today_totals['purine']:.0f}** / {pur_limit:.0f} mg")
         st.progress(pur_pct)
-        
         sug_limit = 5.0 if "糖尿病" in user.get('diabetes_status', '') or "妊娠" in user.get('diabetes_status', '') else 25.0
         sug_pct = min(today_totals["sugar"] / sug_limit, 1.0)
         st.markdown(f"🍭 {t('糖安全配额')}: **{today_totals['sugar']:.1f}** / {sug_limit:.1f} g")
         st.progress(sug_pct)
-        
         save_lbl = "Daily Meal Quota" if st.session_state.lang == 'en' else "今日配餐完成度"
         st.markdown(f"📦 {save_lbl}: **{today_saves_count}** / 3")
         st.progress(min(today_saves_count / 3.0, 1.0))
-        
         st.divider()
-        
-        # 按钮：触发个人档案更新弹窗
         if st.button("⚙️ " + (t("更新我的健康档案") if st.session_state.lang == 'zh' else "Update My Profile"), use_container_width=True):
             profile_update_dialog()
-            
         if st.button(t("🚪 退出登录"), use_container_width=True):
             st.session_state.logged_in = False
             st.session_state.user_profile = {}
             st.cache_data.clear() 
             st.rerun()
 
-    # ==================== 全局主导航控制 ====================
     nav_opts = [t("🍽️ 智能排餐控制台"), t("📚 历史选择记录"), t("💬 社区交流大厅")]
     if is_admin: nav_opts.append(t("📊 系统管理后台"))
-    
     selected_nav = st.radio("主导航", nav_opts, horizontal=True, label_visibility="collapsed")
     st.markdown("<hr style='margin-top:0; border-color:#444;'>", unsafe_allow_html=True)
 
@@ -396,34 +342,25 @@ else:
                     cached_history.clear()
                     st.rerun() 
                 else: st.error(t("❌ 删除失败，请重试。"))
-        
         st.markdown("<br>", unsafe_allow_html=True)
-        
         if not raw_history_data:
             st.info(t("没有找到历史记录。开始您的第一次排餐吧！"))
         else:
             st.markdown(t("##### 📅 自定义方案追溯时间跨度筛选"))
             c_start, c_end = st.columns(2)
-            with c_start:
-                start_date = st.date_input(t("起始查询日期"), value=pd.to_datetime("2026-01-01").date(), key="history_start_date")
-            with c_end:
-                end_date = st.date_input(t("结束查询日期"), value=pd.to_datetime("2026-12-31").date(), key="history_end_date")
-            
+            with c_start: start_date = st.date_input(t("起始查询日期"), value=pd.to_datetime("2026-01-01").date(), key="history_start_date")
+            with c_end: end_date = st.date_input(t("结束查询日期"), value=pd.to_datetime("2026-12-31").date(), key="history_end_date")
             filtered_history = []
             for record in raw_history_data:
                 ts_str = record.get("timestamp") or record.get("date") or ""
                 if ts_str:
                     try:
                         record_date = pd.to_datetime(ts_str[:10]).date()
-                        if start_date <= record_date <= end_date:
-                            filtered_history.append(record)
-                    except Exception:
-                        filtered_history.append(record)
-                else:
-                    filtered_history.append(record)
+                        if start_date <= record_date <= end_date: filtered_history.append(record)
+                    except Exception: filtered_history.append(record)
+                else: filtered_history.append(record)
 
             st.write(f"{t('💡 在选定时间段内，共为您检索到 ')} **{len(filtered_history)}** {t(' 组排餐临床方案：')}")
-            
             for rec in filtered_history:
                 c_chk, c_exp = st.columns([0.5, 11])
                 with c_chk:
@@ -437,13 +374,11 @@ else:
                         lbl_p = "Protein" if st.session_state.lang == 'en' else "蛋白质"
                         lbl_c = "Carbs" if st.session_state.lang == 'en' else "碳水"
                         lbl_f = "Fat" if st.session_state.lang == 'en' else "脂肪"
-                        
                         hist_html = f"""<div style='background-color:#25262b; padding: 15px; border-radius: 8px; margin-bottom: 10px;'>
                         <div style='display:flex; justify-content:space-between; margin-bottom:10px;'>
                             <span style='color:#f39c12; font-weight:bold; font-size:1.2em;'>⚡ {meal['totals']['k']:.0f} kcal</span>
                             <span style='color:#aaa; font-size:0.9em;'>🥩 {lbl_p}: {meal['totals']['p']:.1f}g | 🍚 {lbl_c}: {meal['totals']['c']:.1f}g | 🥑 {lbl_f}: {meal['totals']['f']:.1f}g</span>
                         </div><hr style="border-top: 1px dashed #444; margin: 5px 0;">"""
-                        
                         for r in meal['recipes']:
                             disp_name = r.get('name_en') if st.session_state.lang == 'en' and r.get('name_en') else r.get('name_cn', r.get('name'))
                             hist_html += f"<div style='color:#00c853; margin-top:10px;'>🍽️ {disp_name} <span style='color:#888; font-size:0.8em;'>(≈{r['total_weight']:.0f}g)</span></div>"
@@ -456,51 +391,37 @@ else:
     elif selected_nav == t("💬 社区交流大厅"):
         st.markdown(t("### 💬 临床营养互助社区"))
         st.info(t("💡 这是一个慢节奏的留言板。在这里分享您的减脂控糖心得、讨论排餐方案吧！(受限于服务器资源，发言后页面会自动刷新)"))
-        
-        if st.button(t("🔄 获取最新留言"), use_container_width=True):
-            st.rerun()
-
+        if st.button(t("🔄 获取最新留言"), use_container_width=True): st.rerun()
         st.divider()
-
         messages = api_client.get_chat_messages()
         chat_container = st.container(height=500)
-        
         with chat_container:
-            if not messages:
-                st.write(t("目前还没有人发言，来抢沙发吧！"))
+            if not messages: st.write(t("目前还没有人发言，来抢沙发吧！"))
             else:
                 for msg in messages:
                     avatar_url = msg.get('avatar') or f"https://api.dicebear.com/7.x/bottts/svg?seed={msg['username']}"
                     with st.chat_message(name=msg['username'], avatar=avatar_url):
                         st.markdown(f"**{msg['username']}** <span style='font-size: 0.8em; color: #888;'>({msg['timestamp']})</span>", unsafe_allow_html=True)
                         st.write(msg['content'])
-        
         if prompt := st.chat_input(t("说点什么吧...")):
             with chat_container:
                 current_avatar = user.get('avatar') or f"https://api.dicebear.com/7.x/bottts/svg?seed={user['username']}"
                 with st.chat_message(name=user['username'], avatar=current_avatar):
                     st.write(prompt)
-            
-            if api_client.send_chat_message(user['username'], prompt):
-                st.rerun() 
-            else:
-                st.error(t("❌ 消息发送失败，可能是网络开小差了。"))
+            if api_client.send_chat_message(user['username'], prompt): st.rerun() 
+            else: st.error(t("❌ 消息发送失败，可能是网络开小差了。"))
 
     elif selected_nav == t("🍽️ 智能排餐控制台"):
-        
         @st.dialog(t("⚠️ 覆盖确认"))
         def confirm_overwrite_dialog(username, old_timestamp, new_meal_time, new_meal_data):
             if st.session_state.lang == 'en':
                 st.warning(f"You have already saved a plan for [{tf('meal', new_meal_time)}] today.")
                 st.write("Do you want to overwrite it with the new plan?")
-                btn_yes = "✅ Confirm Overwrite"
-                btn_no = "❌ Cancel"
+                btn_yes, btn_no = "✅ Confirm Overwrite", "❌ Cancel"
             else:
                 st.warning(f"您今天已经保存过【{tf('meal', new_meal_time)}】的排餐方案。")
                 st.write("是否要用当前的新方案覆盖原有记录？")
-                btn_yes = "✅ 确认覆盖"
-                btn_no = "❌ 取消"
-                
+                btn_yes, btn_no = "✅ 确认覆盖", "❌ 取消"
             c1, c2 = st.columns(2)
             if c1.button(btn_yes, use_container_width=True):
                 api_client.delete_history(username, [old_timestamp])
@@ -509,8 +430,7 @@ else:
                 cached_history.clear()
                 time.sleep(0.5)
                 st.rerun()
-            if c2.button(btn_no, use_container_width=True):
-                st.rerun()
+            if c2.button(btn_no, use_container_width=True): st.rerun()
                 
         force_low_gi = False
         if user['diabetes_status'] != "健康 (无糖尿病)":
@@ -520,7 +440,6 @@ else:
 
         st.markdown(t("### ⚖️ 步骤一：餐次能量分配"))
         d_c1, d_c2 = st.columns([1, 1])
-        
         deficit = d_c1.slider(t("📉 目标能量缺口 (每日减持 kcal)"), 0, 1000, 300, step=50, key="deficit_slider")
         meal_opts = ["早餐 (占全天30%)", "早午餐/Brunch (占全天50%)", "午餐 (占全天40%)", "晚餐 (占全天30%)"]
         meal_time = d_c2.radio(t("🕒 本餐次类别"), meal_opts, index=2, horizontal=True, format_func=lambda x: tf('meal', x))
@@ -528,7 +447,6 @@ else:
         is_breakfast_time = "早餐" in meal_time and "早午餐" not in meal_time
         is_brunch_time = "早午餐" in meal_time
         meal_type_payload = "breakfast" if is_breakfast_time else "main"
-
         if is_brunch_time: meal_ratio = 0.5
         elif "午" in meal_time: meal_ratio = 0.4
         else: meal_ratio = 0.3
@@ -539,10 +457,8 @@ else:
 
         c_min, c_max, f_min, f_max, p_min, p_max = 45, 70, 15, 35, 8, 20
         if is_brunch_time: c_min, c_max, f_min, f_max, p_min, p_max = 40, 60, 20, 40, 12, 25
-            
         diab_status = user['diabetes_status']
         comps = user.get('complications', [])
-        
         if "前期" in diab_status: c_min, c_max, f_min, f_max, p_min, p_max = 40, 65, 20, 35, 12, 25
         elif "妊娠" in diab_status: c_min, c_max, f_min, f_max, p_min, p_max = 35, 55, 25, 40, 12, 25
         elif "2型" in diab_status: c_min, c_max, f_min, f_max, p_min, p_max = 40, 60, 20, 40, 12, 25
@@ -552,18 +468,13 @@ else:
         ai_ratio = f"AI 临床区间约束 (碳水 {c_min}-{c_max}% | 脂肪 {f_min}-{f_max}% | 蛋白 {p_min}-{p_max}%)" if st.session_state.lang == 'zh' else f"AI Clinical Constraints (C {c_min}-{c_max}% | F {f_min}-{f_max}% | P {p_min}-{p_max}%)"
         ratio_choice = st.radio(t("三大营养素分配策略"), [ai_ratio, t("自定义比例 (手动覆写)")], horizontal=True)
 
-        if "AI" in ratio_choice or "智能" in ratio_choice:
-            macro_ranges = {'c': [c_min, c_max], 'f': [f_min, f_max], 'p': [p_min, p_max]}
+        if "AI" in ratio_choice or "智能" in ratio_choice: macro_ranges = {'c': [c_min, c_max], 'f': [f_min, f_max], 'p': [p_min, p_max]}
         else:
             r_c1, r_c2, r_c3 = st.columns(3)
             c_r = r_c1.number_input(t("🍚 碳水占比 (%)"), 10, 80, int((c_min+c_max)/2), step=5)
             f_r = r_c2.number_input(t("🥑 脂肪占比 (%)"), 10, 80, int((f_min+f_max)/2), step=5)
             p_r = r_c3.number_input(t("🥩 蛋白质占比 (%)"), 10, 80, int((p_min+p_max)/2), step=5)
-            macro_ranges = {
-                'c': [max(0, c_r - 5), min(100, c_r + 5)],
-                'f': [max(0, f_r - 5), min(100, f_r + 5)],
-                'p': [max(0, p_r - 5), min(100, p_r + 5)]
-            }
+            macro_ranges = {'c': [max(0, c_r - 5), min(100, c_r + 5)], 'f': [max(0, f_r - 5), min(100, f_r + 5)], 'p': [max(0, p_r - 5), min(100, p_r + 5)]}
 
         st.markdown(t("### 🥘 步骤二：环境食材与信仰禁忌"))
         c_v, c_m, c_s = st.columns(3)
@@ -589,11 +500,7 @@ else:
         num_soups = c_soup.number_input(t("🍲 几份汤水/饮品？"), min_value=0, max_value=2, value=0 if not is_breakfast_time else 1)
 
         st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
-        appetite_opts = {
-            t("⚖️ 标准分量 (科学设定上限)"): 1.0,
-            t("💪 大分量 (+20% 菜量上限)"): 1.2,
-            t("🔥 超大分量 (+50% 菜量上限)"): 1.5
-        }
+        appetite_opts = {t("⚖️ 标准分量 (科学设定上限)"): 1.0, t("💪 大分量 (+20% 菜量上限)"): 1.2, t("🔥 超大分量 (+50% 菜量上限)"): 1.5}
         appetite_label = st.radio(t("您的食量偏好："), list(appetite_opts.keys()), horizontal=True)
         appetite_multiplier = appetite_opts[appetite_label]
 
@@ -602,12 +509,10 @@ else:
 
         def run_generation(is_new=True):
             if is_new: st.session_state.hist_ids = []
-            
             today_consumed_real = {
                 "na": today_totals["na"], "k": today_totals["potassium"], 
                 "pho": today_totals["phosphorus"], "purine": today_totals["purine"], "sugar": today_totals["sugar"]
             }
-            
             payload = {
                 "target_kcal": target_kcal, "macro_ranges": macro_ranges, "num_dishes": num_dishes, 
                 "num_staples": num_staples, "num_soups": num_soups, "meal_type": meal_type_payload,
@@ -1044,4 +949,60 @@ else:
                         "diabetes_status": t("血糖状况"), "complications": t("并发症"), 
                         "allergens": t("过敏原"), "is_halal": "清真需求"
                     }, inplace=True)
-                st.dataframe(df_users, use_container_width=True)
+                
+                # 💡 核心增强：允许单选某一行进行后续操作
+                user_selection = st.dataframe(df_users, use_container_width=True, hide_index=True, selection_mode="single-row", on_select="rerun")
+                selected_user_row = user_selection.selection.rows
+                
+                if selected_user_row:
+                    target_user = df_users.iloc[selected_user_row[0]]
+                    target_username = target_user[t("用户名")]
+                    
+                    st.markdown("---")
+                    st.markdown(f"#### {t('⚙️ 患者独立管控台: ')} **{target_username}**")
+                    
+                    tab_hist, tab_action = st.tabs([t("🍽️ TA的排餐追踪"), t("🛠️ 账号与通知下发")])
+                    
+                    with tab_hist:
+                        hist_data = api_client.get_history(target_username)
+                        if not hist_data:
+                            st.info(t("该患者暂无历史排餐记录。"))
+                        else:
+                            for rec in hist_data[:10]:
+                                display_time = rec['timestamp'][:16] 
+                                expander_title = f"🕒 {display_time} | {tf('meal', rec['meal_type'])}"
+                                with st.expander(expander_title):
+                                    meal = json.loads(rec['meal_data'])
+                                    lbl_p = "Protein" if st.session_state.lang == 'en' else "蛋白质"
+                                    lbl_c = "Carbs" if st.session_state.lang == 'en' else "碳水"
+                                    lbl_f = "Fat" if st.session_state.lang == 'en' else "脂肪"
+                                    
+                                    hist_html = f"""<div style='background-color:#25262b; padding: 15px; border-radius: 8px; margin-bottom: 10px;'>
+                                    <div style='display:flex; justify-content:space-between; margin-bottom:10px;'>
+                                        <span style='color:#f39c12; font-weight:bold; font-size:1.2em;'>⚡ {meal['totals']['k']:.0f} kcal</span>
+                                        <span style='color:#aaa; font-size:0.9em;'>🥩 {lbl_p}: {meal['totals']['p']:.1f}g | 🍚 {lbl_c}: {meal['totals']['c']:.1f}g | 🥑 {lbl_f}: {meal['totals']['f']:.1f}g</span>
+                                    </div><hr style="border-top: 1px dashed #444; margin: 5px 0;">"""
+                                    
+                                    for r in meal['recipes']:
+                                        disp_name = r.get('name_en') if st.session_state.lang == 'en' and r.get('name_en') else r.get('name_cn', r.get('name'))
+                                        hist_html += f"<div style='color:#00c853; margin-top:10px;'>🍽️ {disp_name} <span style='color:#888; font-size:0.8em;'>(≈{r['total_weight']:.0f}g)</span></div>"
+                                    hist_html += "</div>"
+                                    st.markdown(hist_html, unsafe_allow_html=True)
+                    
+                    with tab_action:
+                        col_msg, col_pwd = st.columns(2)
+                        with col_msg:
+                            st.markdown(f"**{t('✉️ 发送患者私信 (侧边栏置顶)')}**")
+                            admin_msg_input = st.text_area(t("输入要通知患者的内容..."), key="admin_msg_input")
+                            if st.button(t("📤 下发通知"), use_container_width=True):
+                                if admin_msg_input:
+                                    if api_client.admin_send_user_message(target_username, admin_msg_input):
+                                        st.success(t("✅ 留言下发成功！患者下次登录可见。"))
+                                else:
+                                    st.warning(t("⚠️ 请输入留言内容"))
+                        
+                        with col_pwd:
+                            st.markdown(f"**{t('🔐 危险操作 (安全管控)')}**")
+                            if st.button(t("⚠️ 强制重置密码为 123456"), type="primary", use_container_width=True):
+                                if api_client.admin_reset_user_password(target_username):
+                                    st.success(t("✅ 密码重置成功！"))
