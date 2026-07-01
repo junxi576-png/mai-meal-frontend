@@ -1,5 +1,4 @@
-APP_TITLE = "MAI Meal Planner | 智能临床排餐系统"
-
+APP_TITLE = "Constraint-Based Personalized Recommendation System"
 CUSTOM_CSS = """
 <style>
     .stMultiSelect div[data-baseweb="tag"] { background-color: #2e3136 !important; border-radius: 8px; padding: 4px 8px; }
@@ -22,9 +21,10 @@ CUSTOM_CSS = """
 
 EN_DICT = {
     # --- 基础与用户模块 ---
-    "MAI 临床智能营养师": "MAI Smart Clinical Nutritionist",
-    "精准医学营养治疗 (MNT) 排餐引擎": "Precision Medical Nutrition Therapy (MNT) Engine",
+    "基于约束的个性化饮食推荐系统": "Constraint-Based Personalized Recommendation System",
+    "专为饮食限制人群设计": "For Individuals with Dietary Restrictions",
     "🔐 账号登录": "🔐 Login",
+    # ... 后续代码保留不变
     "📝 新用户注册": "📝 Register",
     "用户名": "Username",
     "密码": "Password",

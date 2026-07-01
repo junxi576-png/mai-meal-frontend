@@ -62,8 +62,8 @@ def compress_image_to_b64(uploaded_file, max_size=(256, 256), quality=80):
 if not st.session_state.logged_in:
     auth_placeholder = st.empty() 
     with auth_placeholder.container():
-        st.markdown(f"<h1 style='text-align: center; color: #00c853;'>{t('MAI 临床智能营养师')}</h1>", unsafe_allow_html=True)
-        st.markdown(f"<p style='text-align: center; color: #888;'>{t('精准医学营养治疗 (MNT) 排餐引擎')}</p><br>", unsafe_allow_html=True)
+        st.markdown(f"<h1 style='text-align: center; color: #00c853;'>{t('基于约束的个性化饮食推荐系统')}</h1>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: center; color: #888;'>{t('专为饮食限制人群设计')}</p><br>", unsafe_allow_html=True)
         
         col_l, col_m, col_r = st.columns([1, 2, 1])
         with col_m:
