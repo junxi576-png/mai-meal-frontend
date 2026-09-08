@@ -48,6 +48,8 @@ EN_DICT = {
     "年龄": "Age",
     "身高 (cm)": "Height (cm)",
     "体重 (kg)": "Weight (kg)",
+    "岁": "years old",
+    "健康与体质标签": "Health & Physique Tags",
     "#### 🩺 临床与过敏筛查": "#### 🩺 Clinical & Allergy Screening",
     "您的血糖状况属于：": "Your Blood Sugar Status:",
     "是否伴有以下代谢并发症：": "Metabolic Complications:",
@@ -192,8 +194,13 @@ EN_DICT = {
     "钾 (mg)": "Potassium (mg)",
     "磷 (mg)": "Phosphorus (mg)",
     "嘌呤 (mg)": "Purine (mg)",
-    
-    
+    "清真需求": "Halal Requirement",
+    "⚙️ 更新我的健康档案": "⚙️ Update Health Profile",
+    "食材ID *": "Ingredient ID *",
+    "系统有效配方拓扑明细": "Valid System Recipe Topology Details",
+    "菜谱ID": "Recipe ID",
+    "菜谱中文名": "Recipe Chinese Name",
+    " 关联底层食材": " Link Sub-Ingredients",
     # === 补全：历史记录双日历与动态文本 ===
     "##### 📅 自定义方案追溯时间跨度筛选": "##### 📅 Custom Date Range Filter",
     "起始查询日期": "Start Date",

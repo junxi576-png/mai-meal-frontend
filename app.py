@@ -259,8 +259,8 @@ else:
         </div>
         """, unsafe_allow_html=True)
         
-        st.markdown(f"**年龄**: {user['age']} 岁 | **性别**: {tf('gender', user['gender'])}<br>**身高**: {user['height']} cm | **体重**: {user['weight']} kg", unsafe_allow_html=True)
-        st.markdown(f"**健康与体质标签**: <br>🔹 {tf('diabetes', user['diabetes_status'])}", unsafe_allow_html=True)
+        st.markdown(f"**{t('年龄')}**: {user['age']} {t('岁')} | **{t('性别')}**: {tf('gender', user['gender'])} \n**{t('身高 (cm)')}**: {user['height']} | **{t('体重 (kg)')}**: {user['weight']}", unsafe_allow_html=True)
+        st.markdown(f"**{t('健康与体质标签')}**: \n  {tf('diabetes', user['diabetes_status'])}", unsafe_allow_html=True)
 
         if user['complications']:
             comps_options = ["糖尿病肾病 (需严控蛋白质/钾/磷)", "高血压 (需清淡低钠)", "高尿酸血症/痛风 (需低嘌呤)"]
@@ -947,7 +947,7 @@ else:
                         "username": t("用户名"), "email": e_trans, "bio": b_trans, "age": t("年龄"), 
                         "gender": t("性别"), "height": t("身高 (cm)"), "weight": t("体重 (kg)"), 
                         "diabetes_status": t("血糖状况"), "complications": t("并发症"), 
-                        "allergens": t("过敏原"), "is_halal": "清真需求"
+                        "allergens": t("过敏原"), "is_halal": t("清真需求")
                     }, inplace=True)
                 
                 # 💡 核心增强：允许单选某一行进行后续操作
