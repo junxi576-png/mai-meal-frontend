@@ -24,7 +24,11 @@ with c_lang:
     st.session_state.lang = 'zh' if lang_mode == "中文" else 'en'
 
 @st.cache_data(show_spinner=False, ttl=600)
-def cached_recipes(): return api_client.get_recipes()
+def cached_recipes():
+    res = api_client.get_recipes()
+    if not res:
+        cached_recipes.clear()  # 如果超时拿到空数据，立刻清除缓存，下次重新请求
+    return res
 
 @st.cache_data(show_spinner=False, ttl=60)
 def cached_history(username): return api_client.get_history(username)
@@ -151,14 +155,29 @@ if not st.session_state.logged_in:
 else:
     recipes_db = cached_recipes()
     unique_ings = {'Veg': set(), 'Meat': set(), 'Staple': set(), 'Other': set()}
+    ing_translate_map = {} # 新增：用于记录中英文对照字典
+
     for r in recipes_db:
         for ing in r['ingredients']:
             cat = ing.get('cat', '')
-            if cat in ['Grain']: ui_cat = 'Staple'
-            elif cat in ['Vegetable', 'Fruit']: ui_cat = 'Veg'
-            elif cat in ['Meat', 'Beef', 'Mutton', 'Poultry', 'Pork', 'Seafood', 'Dairy_Egg']: ui_cat = 'Meat'
-            else: ui_cat = 'Other'
-            unique_ings[ui_cat].add(ing['name'])
+            if cat in ['Grain']:
+                ui_cat = 'Staple'
+            elif cat in ['Vegetable', 'Fruit']:
+                ui_cat = 'Veg'
+            elif cat in ['Meat', 'Beef', 'Mutton', 'Poultry', 'Pork', 'Seafood', 'Dairy_Egg']:
+                ui_cat = 'Meat'
+            else:
+                ui_cat = 'Other'
+            
+            cn_name = ing.get('name', '')
+            unique_ings[ui_cat].add(cn_name)
+            
+            # 强化映射逻辑：提取英文名，若为空则降级使用中文名
+            en_name = ing.get('name_en')
+            if not en_name:
+                en_name = cn_name
+            # 根据当前语言环境将中英文绑定
+            ing_translate_map[cn_name] = en_name if st.session_state.lang == 'en' else cn_name
 
     user = st.session_state.user_profile
     is_admin = (user['username'].lower() == 'admin') 
@@ -478,9 +497,9 @@ else:
 
         st.markdown(t("### 🥘 步骤二：环境食材与信仰禁忌"))
         c_v, c_m, c_s = st.columns(3)
-        sel_v = c_v.multiselect(t("🥬 冰箱里的蔬菜"), sorted(list(unique_ings['Veg'])), placeholder=t("选择已有蔬菜..."))
-        sel_m = c_m.multiselect(t("🥩 冰箱里的肉类/海鲜"), sorted(list(unique_ings['Meat'])), placeholder=t("选择已有肉类..."))
-        sel_s = c_s.multiselect(t("🌾 冰箱里的主食"), sorted(list(unique_ings['Staple'])), placeholder=t("选择已有主食..."))
+        sel_v = c_v.multiselect(t("🥬 冰箱里的蔬菜"), sorted(list(unique_ings['Veg'])), placeholder=t("选择已有蔬菜..."), format_func=lambda x: ing_translate_map.get(x, x))
+        sel_m = c_m.multiselect(t("🥩 冰箱里的肉类/海鲜"), sorted(list(unique_ings['Meat'])), placeholder=t("选择已有肉类..."), format_func=lambda x: ing_translate_map.get(x, x))
+        sel_s = c_s.multiselect(t("🌾 冰箱里的主食"), sorted(list(unique_ings['Staple'])), placeholder=t("选择已有主食..."), format_func=lambda x: ing_translate_map.get(x, x))
         total_sel = sel_v + sel_m + sel_s
 
         src_opts = ["允许增添未有食材 (混合推荐)", "仅使用冰箱已有食材 (严格清理库存)"]

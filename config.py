@@ -104,7 +104,8 @@ EN_DICT = {
     "⚠️ 请先勾选要删除的记录！": "⚠️ Please select records to delete first!",
     "✅ 成功删除记录！": "✅ Successfully deleted records!",
     "❌ 删除失败，请重试。": "❌ Deletion failed, please try again.",
-    
+    "岁": "years old",
+    "健康与体质标签": "Health & Physique Tags",
     # === 新增：管理后台界面全量翻译 ===
     "📊 系统管理后台": "📊 Admin Dashboard",
     "系统功能导航": "System Menu Navigation",
